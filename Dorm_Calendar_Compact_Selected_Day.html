@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dorm Calendar</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --text: #111827;
+      --muted: #667085;
+      --line: #e5e7eb;
+      --primary: #6d5dfc;
+      --primary-dark: #5546e7;
+      --today: #eef0ff;
+      --danger: #b42318;
+      --shadow: 0 16px 40px rgba(17, 24, 39, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      background: linear-gradient(135deg, #171e31, #313b5d);
+      color: white;
+      padding: 24px;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .topbar h1 {
+      margin: 0 0 6px;
+      font-size: 30px;
+    }
+
+    .topbar p {
+      margin: 0;
+      color: #cbd5e1;
+    }
+
+    .add-btn {
+      border: 0;
+      background: var(--primary);
+      color: white;
+      padding: 12px 17px;
+      border-radius: 12px;
+      font-weight: 700;
+      box-shadow: 0 8px 20px rgba(109, 93, 252, 0.28);
+    }
+
+    .add-btn:hover {
+      background: var(--primary-dark);
+    }
+
+    .calendar-card {
+      background: var(--surface);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .calendar-header h2 {
+      margin: 0;
+      font-size: 25px;
+    }
+
+    .calendar-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn, .today-btn {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 10px;
+      height: 40px;
+      padding: 0 13px;
+      font-weight: 700;
+    }
+
+    .icon-btn {
+      width: 40px;
+      padding: 0;
+    }
+
+    .icon-btn:hover, .today-btn:hover {
+      background: #f8fafc;
+    }
+
+    .weekdays, .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .weekdays {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .weekday {
+      padding: 10px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .06em;
+    }
+
+    .calendar-grid {
+      border-left: 1px solid var(--line);
+      border-top: 1px solid var(--line);
+    }
+
+    .day {
+      min-height: 145px;
+      padding: 9px;
+      background: white;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+      transition: .15s;
+    }
+
+    .day:hover {
+      background: #fafbff;
+    }
+
+    .day.other-month {
+      background: #fafafa;
+      color: #a8b0bd;
+    }
+
+    .day.today {
+      background: var(--today);
+    }
+
+    .day.selected {
+      outline: 3px solid rgba(109, 93, 252, .2);
+      outline-offset: -3px;
+    }
+
+    .day-number {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 7px;
+    }
+
+    .today .day-number {
+      background: var(--primary);
+      color: white;
+    }
+
+    .events {
+      display: grid;
+      gap: 5px;
+    }
+
+    .event-chip {
+      border: 0;
+      width: 100%;
+      text-align: left;
+      padding: 6px 7px;
+      border-radius: 8px;
+      background: #eeeaff;
+      color: #4438ca;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-chip.school { background: #e7f0ff; color: #1d4ed8; }
+    .event-chip.dorm { background: #e7f8ee; color: #237a49; }
+    .event-chip.sports { background: #fff0e6; color: #b45309; }
+    .event-chip.personal { background: #f3e8ff; color: #7e22ce; }
+
+    .more-events {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 700;
+      padding-left: 4px;
+    }
+
+    .bottom-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .compact-bottom {
+      grid-template-columns: 280px 1fr;
+      align-items: stretch;
+    }
+
+    .selected-day-button {
+      border: 0;
+      background: linear-gradient(135deg, #6d5dfc, #8b7cff);
+      color: white;
+      border-radius: 20px;
+      padding: 22px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 150px;
+      box-shadow: var(--shadow);
+    }
+
+    .selected-day-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .selected-day-kicker {
+      display: block;
+      margin: 0 0 8px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      opacity: .8;
+    }
+
+    .selected-day-button strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .selected-day-arrow {
+      margin-top: 18px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .day-screen-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, .62);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 90;
+    }
+
+    .day-screen-backdrop.show {
+      display: flex;
+    }
+
+    .day-screen {
+      width: min(720px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: white;
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.3);
+    }
+
+    .day-screen-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .day-screen-header h2 {
+      margin: 4px 0 0;
+      font-size: 25px;
+    }
+
+    .day-screen-list {
+      margin-top: 18px;
+    }
+
+    .side-panel {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .side-panel h3 {
+      margin: 0 0 4px;
+    }
+
+    .side-panel .date-label {
+      color: var(--muted);
+      margin: 0 0 16px;
+      font-size: 13px;
+    }
+
+    .event-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .event-item {
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 12px;
+    }
+
+    .event-item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .event-item h4 {
+      margin: 0 0 5px;
+      font-size: 14px;
+    }
+
+    .event-item p {
+      margin: 2px 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .delete-btn {
+      border: 0;
+      width: 31px;
+      height: 31px;
+      border-radius: 9px;
+      background: #fff0f0;
+      color: var(--danger);
+    }
+
+    .empty {
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 13px;
+      font-size: 13px;
+    }
+
+    .upcoming-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .upcoming-card {
+      border-left: 4px solid var(--primary);
+      background: #f8f8ff;
+      border-radius: 10px;
+      padding: 11px 12px;
+    }
+
+    .upcoming-card strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .upcoming-card span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, .58);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 100;
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal {
+      width: min(520px, 100%);
+      background: white;
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.28);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+    }
+
+    .close-btn {
+      border: 0;
+      width: 35px;
+      height: 35px;
+      border-radius: 10px;
+      background: #f1f3f7;
+    }
+
+    form {
+      display: grid;
+      gap: 13px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #344054;
+    }
+
+    input, textarea, select {
+      border: 1px solid #d8dde6;
+      border-radius: 10px;
+      padding: 11px 12px;
+      outline: none;
+      width: 100%;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(109, 93, 252, .12);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 9px;
+      margin-top: 5px;
+    }
+
+    .secondary-btn {
+      border: 0;
+      background: #eef1f6;
+      padding: 11px 15px;
+      border-radius: 11px;
+      font-weight: 700;
+    }
+
+    .hidden { display: none !important; }
+
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      background: #111827;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 10px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: .2s;
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+
+    .recurrence-box {
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      border-radius: 13px;
+      padding: 13px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .recurrence-box h4 {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .weekday-picker {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .weekday-choice {
+      position: relative;
+    }
+
+    .weekday-choice input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .weekday-choice span {
+      display: grid;
+      place-items: center;
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: white;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .weekday-choice input:checked + span {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .repeat-summary {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 900px) {
+      .bottom-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .compact-bottom {
+        grid-template-columns: 1fr;
+      }
+
+      .selected-day-button {
+        min-height: 120px;
+      }
+
+      .day {
+        min-height: 120px;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .app {
+        padding: 12px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .calendar-card {
+        padding: 10px;
+      }
+
+      .calendar-header {
+        padding: 8px;
+      }
+
+      .calendar-header h2 {
+        font-size: 20px;
+      }
+
+      .weekday {
+        font-size: 10px;
+        padding: 8px 2px;
+      }
+
+      .day {
+        min-height: 86px;
+        padding: 5px;
+      }
+
+      .day-number {
+        width: 24px;
+        height: 24px;
+        font-size: 11px;
+      }
+
+      .event-chip {
+        font-size: 9px;
+        padding: 4px;
+      }
+
+      .more-events {
+        font-size: 9px;
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <h1>Dorm Calendar</h1>
+        <p>Click any date to add classes, dorm activities, school events, or reminders.</p>
+      </div>
+      <button class="add-btn" id="topAddBtn">＋ Add event</button>
+    </header>
+
+    <section class="calendar-card">
+      <div class="calendar-header">
+        <div class="calendar-controls">
+          <button class="icon-btn" id="prevBtn">‹</button>
+          <button class="today-btn" id="todayBtn">Today</button>
+          <button class="icon-btn" id="nextBtn">›</button>
+        </div>
+        <h2 id="monthTitle"></h2>
+        <div style="width:128px;"></div>
+      </div>
+
+      <div class="weekdays">
+        <div class="weekday">SUN</div>
+        <div class="weekday">MON</div>
+        <div class="weekday">TUE</div>
+        <div class="weekday">WED</div>
+        <div class="weekday">THU</div>
+        <div class="weekday">FRI</div>
+        <div class="weekday">SAT</div>
+      </div>
+
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </section>
+
+    <section class="bottom-layout compact-bottom">
+      <button class="selected-day-button" id="openSelectedDayBtn">
+        <div>
+          <span class="selected-day-kicker">SELECTED DAY</span>
+          <strong id="selectedDayButtonLabel"></strong>
+        </div>
+        <span class="selected-day-arrow">View day →</span>
+      </button>
+
+      <div class="side-panel">
+        <h3>Upcoming events</h3>
+        <p class="date-label">Your next scheduled items</p>
+        <div class="upcoming-list" id="upcomingList"></div>
+      </div>
+    </section>
+  </div>
+
+
+  <div class="day-screen-backdrop" id="dayScreenBackdrop">
+    <div class="day-screen">
+      <div class="day-screen-header">
+        <div>
+          <p class="selected-day-kicker">SELECTED DAY</p>
+          <h2 id="selectedDateLabel"></h2>
+        </div>
+        <button class="close-btn" id="closeDayScreenBtn">✕</button>
+      </div>
+
+      <button class="add-btn" id="selectedAddBtn">＋ Add event for this day</button>
+      <div class="event-list day-screen-list" id="selectedEventList"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add calendar event</h3>
+        <button class="close-btn" id="closeModalBtn">✕</button>
+      </div>
+
+      <form id="eventForm">
+        <label>
+          Event title
+          <input id="eventTitle" type="text" placeholder="Example: Biology class" required />
+        </label>
+
+        <div class="two-col">
+          <label>
+            Date
+            <input id="eventDate" type="date" required />
+          </label>
+
+          <label>
+            Time
+            <input id="eventTime" type="time" />
+          </label>
+        </div>
+
+        <div class="recurrence-box">
+          <h4>Repeat this event</h4>
+
+          <label>
+            Repeat
+            <select id="repeatType">
+              <option value="none">Does not repeat</option>
+              <option value="daily">Every day</option>
+              <option value="weekdays">Every weekday</option>
+              <option value="weekends">Every weekend</option>
+              <option value="weekly">Every week on selected days</option>
+            </select>
+          </label>
+
+          <div id="weekdayPickerWrap" class="hidden">
+            <label>Select days</label>
+            <div class="weekday-picker">
+              <label class="weekday-choice"><input type="checkbox" value="0"><span>Sun</span></label>
+              <label class="weekday-choice"><input type="checkbox" value="1"><span>Mon</span></label>
+              <label class="weekday-choice"><input type="checkbox" value="2"><span>Tue</span></label>
+              <label class="weekday-choice"><input type="checkbox" value="3"><span>Wed</span></label>
+              <label class="weekday-choice"><input type="checkbox" value="4"><span>Thu</span></label>
+              <label class="weekday-choice"><input type="checkbox" value="5"><span>Fri</span></label>
+              <label class="weekday-choice"><input type="checkbox" value="6"><span>Sat</span></label>
+            </div>
+          </div>
+
+          <label id="repeatEndWrap" class="hidden">
+            Repeat until
+            <input id="repeatEndDate" type="date" />
+          </label>
+
+          <p class="repeat-summary" id="repeatSummary">This event will be added once.</p>
+        </div>
+
+        <div class="two-col">
+          <label>
+            Category
+            <select id="eventCategory">
+              <option value="school">School</option>
+              <option value="dorm">Dorm</option>
+              <option value="sports">Sports</option>
+              <option value="personal">Personal</option>
+            </select>
+          </label>
+
+          <label>
+            Location
+            <input id="eventLocation" type="text" placeholder="Room, gym, dorm..." />
+          </label>
+        </div>
+
+        <label>
+          Notes
+          <textarea id="eventNotes" rows="3" placeholder="Extra details"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button type="button" class="secondary-btn" id="cancelBtn">Cancel</button>
+          <button type="submit" class="add-btn">Save event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Saved</div>
+
+  <script>
+    const STORAGE_KEY = "dorm-calendar-events-v1";
+    const today = new Date();
+
+    let currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    let selectedDate = formatISO(today);
+    let events = loadEvents();
+
+    const $ = id => document.getElementById(id);
+
+    function loadEvents() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+          {
+            id: makeId(),
+            title: "Dorm orientation",
+            date: formatISO(today),
+            time: "18:00",
+            category: "dorm",
+            location: "Main Lounge",
+            notes: "Meet your floor and dorm staff"
+          },
+          {
+            id: makeId(),
+            title: "Math class",
+            date: addDaysISO(1),
+            time: "08:30",
+            category: "school",
+            location: "Room 204",
+            notes: "Bring calculator"
+          },
+          {
+            id: makeId(),
+            title: "Basketball practice",
+            date: addDaysISO(2),
+            time: "16:30",
+            category: "sports",
+            location: "Main Gym",
+            notes: "Bring water bottle"
+          }
+        ];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveEvents() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+      renderAll();
+    }
+
+    function makeId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+
+    function formatISO(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function addDaysISO(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return formatISO(date);
+    }
+
+    function addMonthsISO(dateISO, months) {
+      const date = new Date(dateISO + "T12:00:00");
+      date.setMonth(date.getMonth() + months);
+      return formatISO(date);
+    }
+
+    function getDatesForRecurrence(startISO, endISO, repeatType, selectedDays) {
+      if (repeatType === "none") return [startISO];
+
+      const start = new Date(startISO + "T12:00:00");
+      const end = new Date(endISO + "T12:00:00");
+      const result = [];
+
+      if (end < start) return [];
+
+      const current = new Date(start);
+
+      while (current <= end) {
+        const day = current.getDay();
+        let include = false;
+
+        if (repeatType === "daily") include = true;
+        if (repeatType === "weekdays") include = day >= 1 && day <= 5;
+        if (repeatType === "weekends") include = day === 0 || day === 6;
+        if (repeatType === "weekly") include = selectedDays.includes(day);
+
+        if (include) result.push(formatISO(current));
+        current.setDate(current.getDate() + 1);
+      }
+
+      return result;
+    }
+
+    function updateRepeatControls() {
+      const repeatType = $("repeatType").value;
+      const isRepeating = repeatType !== "none";
+      const customWeekly = repeatType === "weekly";
+
+      $("repeatEndWrap").classList.toggle("hidden", !isRepeating);
+      $("weekdayPickerWrap").classList.toggle("hidden", !customWeekly);
+
+      const startDate = $("eventDate").value;
+      const endDate = $("repeatEndDate").value;
+      const selectedDays = [...document.querySelectorAll(".weekday-choice input:checked")]
+        .map(input => Number(input.value));
+
+      if (!isRepeating) {
+        $("repeatSummary").textContent = "This event will be added once.";
+        return;
+      }
+
+      const labels = {
+        daily: "every day",
+        weekdays: "every weekday",
+        weekends: "every Saturday and Sunday",
+        weekly: selectedDays.length
+          ? "every " + selectedDays.map(day => ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][day]).join(", ")
+          : "on the selected weekdays"
+      };
+
+      if (!startDate || !endDate) {
+        $("repeatSummary").textContent = "Choose an end date for the recurring event.";
+        return;
+      }
+
+      const count = getDatesForRecurrence(startDate, endDate, repeatType, selectedDays).length;
+      $("repeatSummary").textContent =
+        `Adds this event ${labels[repeatType]} through ${formatLongDate(endDate)} (${count} event${count === 1 ? "" : "s"}).`;
+    }
+
+    function formatLongDate(dateString) {
+      return new Date(dateString + "T12:00:00").toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+
+    function formatShortDate(dateString) {
+      return new Date(dateString + "T12:00:00").toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric"
+      });
+    }
+
+    function formatTime(time) {
+      if (!time) return "No time";
+      const [hour, minute] = time.split(":");
+      const date = new Date();
+      date.setHours(Number(hour), Number(minute));
+      return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit"
+      });
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function renderCalendar() {
+      $("monthTitle").textContent = currentMonth.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric"
+      });
+
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const startDate = new Date(year, month, 1 - firstDay.getDay());
+
+      let html = "";
+
+      for (let i = 0; i < 42; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+
+        const dateISO = formatISO(date);
+        const isOtherMonth = date.getMonth() !== month;
+        const isToday = dateISO === formatISO(today);
+        const isSelected = dateISO === selectedDate;
+
+        const dayEvents = events
+          .filter(event => event.date === dateISO)
+          .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
+        const visibleEvents = dayEvents.slice(0, 3);
+
+        html += `
+          <div class="day ${isOtherMonth ? "other-month" : ""} ${isToday ? "today" : ""} ${isSelected ? "selected" : ""}"
+               onclick="selectDate('${dateISO}')"
+               ondblclick="openAddModal('${dateISO}')">
+            <div class="day-number">${date.getDate()}</div>
+            <div class="events">
+              ${visibleEvents.map(event => `
+                <button class="event-chip ${event.category}"
+                        onclick="event.stopPropagation(); selectDate('${dateISO}')"
+                        title="${escapeHTML(event.title)}">
+                  ${event.time ? formatTime(event.time) + " " : ""}${escapeHTML(event.title)}
+                </button>
+              `).join("")}
+              ${dayEvents.length > 3 ? `<div class="more-events">+${dayEvents.length - 3} more</div>` : ""}
+            </div>
+          </div>
+        `;
+      }
+
+      $("calendarGrid").innerHTML = html;
+    }
+
+    function renderSelectedDay() {
+      const formattedSelectedDate = formatLongDate(selectedDate);
+      $("selectedDateLabel").textContent = formattedSelectedDate;
+      $("selectedDayButtonLabel").textContent = formattedSelectedDate;
+
+      const dayEvents = events
+        .filter(event => event.date === selectedDate)
+        .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
+      $("selectedEventList").innerHTML = dayEvents.length
+        ? dayEvents.map(event => `
+          <div class="event-item">
+            <div class="event-item-top">
+              <div>
+                <h4>${escapeHTML(event.title)}</h4>
+                <p><strong>${formatTime(event.time)}</strong> · ${escapeHTML(event.category)}</p>
+                <p>${escapeHTML(event.location || "No location")}</p>
+                <p>${escapeHTML(event.notes || "No notes")}</p>
+              </div>
+              <button class="delete-btn" onclick="deleteEvent('${event.id}')">🗑</button>
+            </div>
+          </div>
+        `).join("")
+        : `<div class="empty">No events on this day yet.</div>`;
+    }
+
+    function renderUpcoming() {
+      const nowISO = formatISO(today);
+
+      const upcoming = [...events]
+        .filter(event => event.date >= nowISO)
+        .sort((a, b) => {
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
+          return (a.time || "").localeCompare(b.time || "");
+        })
+        .slice(0, 7);
+
+      $("upcomingList").innerHTML = upcoming.length
+        ? upcoming.map(event => `
+          <div class="upcoming-card">
+            <strong>${escapeHTML(event.title)}</strong>
+            <span>${formatShortDate(event.date)} · ${formatTime(event.time)} · ${escapeHTML(event.location || event.category)}</span>
+          </div>
+        `).join("")
+        : `<div class="empty">No upcoming events.</div>`;
+    }
+
+    function renderAll() {
+      renderCalendar();
+      renderSelectedDay();
+      renderUpcoming();
+    }
+
+    window.selectDate = function(dateISO) {
+      selectedDate = dateISO;
+      renderAll();
+    };
+
+    window.deleteEvent = function(eventId) {
+      events = events.filter(event => event.id !== eventId);
+      saveEvents();
+      showToast("Event deleted");
+    };
+
+    window.openAddModal = function(dateISO = selectedDate) {
+      $("eventForm").reset();
+      $("eventDate").value = dateISO;
+      $("repeatType").value = "none";
+      $("repeatEndDate").value = addMonthsISO(dateISO, 1);
+      document.querySelectorAll(".weekday-choice input").forEach(input => input.checked = false);
+
+      const selectedDay = new Date(dateISO + "T12:00:00").getDay();
+      const matchingDay = document.querySelector(`.weekday-choice input[value="${selectedDay}"]`);
+      if (matchingDay) matchingDay.checked = true;
+
+      updateRepeatControls();
+      $("modalBackdrop").classList.add("show");
+      setTimeout(() => $("eventTitle").focus(), 50);
+    };
+
+    function closeModal() {
+      $("modalBackdrop").classList.remove("show");
+    }
+
+    $("prevBtn").addEventListener("click", () => {
+      currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+      renderCalendar();
+    });
+
+    $("nextBtn").addEventListener("click", () => {
+      currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+      renderCalendar();
+    });
+
+    $("todayBtn").addEventListener("click", () => {
+      currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      selectedDate = formatISO(today);
+      renderAll();
+    });
+
+    function openDayScreen() {
+      $("dayScreenBackdrop").classList.add("show");
+    }
+
+    function closeDayScreen() {
+      $("dayScreenBackdrop").classList.remove("show");
+    }
+
+    $("topAddBtn").addEventListener("click", () => openAddModal(selectedDate));
+    $("selectedAddBtn").addEventListener("click", () => openAddModal(selectedDate));
+    $("openSelectedDayBtn").addEventListener("click", openDayScreen);
+    $("closeDayScreenBtn").addEventListener("click", closeDayScreen);
+    $("closeModalBtn").addEventListener("click", closeModal);
+    $("cancelBtn").addEventListener("click", closeModal);
+
+    $("modalBackdrop").addEventListener("click", event => {
+      if (event.target === $("modalBackdrop")) closeModal();
+    });
+
+    $("dayScreenBackdrop").addEventListener("click", event => {
+      if (event.target === $("dayScreenBackdrop")) closeDayScreen();
+    });
+
+    $("repeatType").addEventListener("change", updateRepeatControls);
+    $("eventDate").addEventListener("change", () => {
+      if ($("repeatType").value !== "none" && !$("repeatEndDate").value) {
+        $("repeatEndDate").value = addMonthsISO($("eventDate").value, 1);
+      }
+      updateRepeatControls();
+    });
+    $("repeatEndDate").addEventListener("change", updateRepeatControls);
+    document.querySelectorAll(".weekday-choice input").forEach(input => {
+      input.addEventListener("change", updateRepeatControls);
+    });
+
+    $("eventForm").addEventListener("submit", event => {
+      event.preventDefault();
+
+      const repeatType = $("repeatType").value;
+      const selectedDays = [...document.querySelectorAll(".weekday-choice input:checked")]
+        .map(input => Number(input.value));
+
+      if (repeatType === "weekly" && selectedDays.length === 0) {
+        alert("Choose at least one weekday.");
+        return;
+      }
+
+      const startDate = $("eventDate").value;
+      const endDate = repeatType === "none" ? startDate : $("repeatEndDate").value;
+
+      if (repeatType !== "none" && (!endDate || endDate < startDate)) {
+        alert("The repeat-until date must be the same as or after the start date.");
+        return;
+      }
+
+      const dates = getDatesForRecurrence(startDate, endDate, repeatType, selectedDays);
+
+      if (dates.length === 0) {
+        alert("No matching dates were found. Check the selected days and date range.");
+        return;
+      }
+
+      const seriesId = makeId();
+      const baseEvent = {
+        title: $("eventTitle").value.trim(),
+        time: $("eventTime").value,
+        category: $("eventCategory").value,
+        location: $("eventLocation").value.trim(),
+        notes: $("eventNotes").value.trim(),
+        repeatType,
+        seriesId
+      };
+
+      dates.forEach(date => {
+        events.push({
+          ...baseEvent,
+          id: makeId(),
+          date
+        });
+      });
+
+      selectedDate = startDate;
+
+      const dateObject = new Date(startDate + "T12:00:00");
+      currentMonth = new Date(dateObject.getFullYear(), dateObject.getMonth(), 1);
+
+      saveEvents();
+      closeModal();
+      showToast(dates.length === 1 ? "Event saved" : `${dates.length} events added`);
+    });
+
+    function showToast(message) {
+      $("toast").textContent = message;
+      $("toast").classList.add("show");
+      setTimeout(() => $("toast").classList.remove("show"), 1800);
+    }
+
+    renderAll();
+  </script>
+</body>
+</html>
