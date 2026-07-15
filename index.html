@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dorm Calendar</title>
+  <title>Schedule</title>
   <style>
     :root {
       --bg: #f4f6fb;
@@ -712,17 +712,17 @@
   <div class="app">
     <header class="topbar">
       <div>
-        <h1>Dorm Calendar</h1>
-        <p>Click any date to add classes, dorm activities, school events, or reminders.</p>
+        <h1>Schedule</h1>
+        <p>...</p>
       </div>
 
       <div class="topbar-actions">
         <div class="clock-card">
-          <span>CENTRAL TIME</span>
+          <span>Cst</span>
           <strong id="centralClock">--:--:--</strong>
           <small id="centralClockDate"></small>
         </div>
-        <button class="add-btn" id="topAddBtn">＋ Add event</button>
+        <button class="add-btn" id="topAddBtn">+ADD+</button>
       </div>
     </header>
 
@@ -738,13 +738,13 @@
       </div>
 
       <div class="weekdays">
-        <div class="weekday">SUN</div>
-        <div class="weekday">MON</div>
-        <div class="weekday">TUE</div>
-        <div class="weekday">WED</div>
-        <div class="weekday">THU</div>
-        <div class="weekday">FRI</div>
-        <div class="weekday">SAT</div>
+        <div class="weekday">Sun</div>
+        <div class="weekday">Mon</div>
+        <div class="weekday">Tue</div>
+        <div class="weekday">Wed</div>
+        <div class="weekday">Thu</div>
+        <div class="weekday">Fri</div>
+        <div class="weekday">Sat</div>
       </div>
 
       <div class="calendar-grid" id="calendarGrid"></div>
@@ -756,12 +756,12 @@
           <span class="selected-day-kicker">SELECTED DAY</span>
           <strong id="selectedDayButtonLabel"></strong>
         </div>
-        <span class="selected-day-arrow">View day →</span>
+        <span class="selected-day-arrow">day -></span>
       </button>
 
       <div class="side-panel">
         <h3>Upcoming events</h3>
-        <p class="date-label">Your next scheduled items</p>
+        <p class="date-label">...</p>
         <div class="upcoming-list" id="upcomingList"></div>
       </div>
     </section>
@@ -778,7 +778,7 @@
         <button class="close-btn" id="closeDayScreenBtn">✕</button>
       </div>
 
-      <button class="add-btn" id="selectedAddBtn">＋ Add event for this day</button>
+      <button class="add-btn" id="selectedAddBtn">＋ Add event</button>
       <div class="event-list day-screen-list" id="selectedEventList"></div>
     </div>
   </div>
@@ -848,7 +848,7 @@
             Category
             <select id="eventCategory">
               <option value="school">School</option>
-              <option value="dorm">Dorm</option>
+              <option value="dorm">other</option>
               <option value="sports">Sports</option>
               <option value="personal">Personal</option>
             </select>
