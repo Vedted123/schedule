@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scheduler</title>
+  <title>Dorm Calendar</title>
   <style>
     :root {
       --bg: #f4f6fb;
@@ -42,6 +42,7 @@
     }
 
     .topbar {
+      position: relative;
       background: linear-gradient(135deg, #171e31, #313b5d);
       color: white;
       padding: 24px;
@@ -76,6 +77,62 @@
 
     .add-btn:hover {
       background: var(--primary-dark);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding-top: 26px;
+    }
+
+    .clock-card {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      min-width: 0;
+      text-align: right;
+    }
+
+    .clock-card span {
+      color: #94a3b8;
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .09em;
+    }
+
+    .clock-card strong {
+      font-size: 12px;
+      letter-spacing: .02em;
+      color: white;
+    }
+
+    .clock-card small {
+      display: none;
+    }
+
+    .delete-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      justify-content: flex-end;
+    }
+
+    .delete-series-btn {
+      border: 0;
+      min-height: 31px;
+      border-radius: 9px;
+      padding: 7px 9px;
+      background: #fff0f0;
+      color: var(--danger);
+      font-size: 10px;
+      font-weight: 800;
     }
 
     .calendar-card {
@@ -597,6 +654,17 @@
         flex-direction: column;
       }
 
+      .topbar-actions {
+        width: 100%;
+        justify-content: flex-end;
+        padding-top: 18px;
+      }
+
+      .clock-card {
+        top: 9px;
+        right: 12px;
+      }
+
       .calendar-card {
         padding: 10px;
       }
@@ -644,10 +712,18 @@
   <div class="app">
     <header class="topbar">
       <div>
-        <h1>Scheduler</h1>
-        <p>Add</p>
+        <h1>Dorm Calendar</h1>
+        <p>Click any date to add classes, dorm activities, school events, or reminders.</p>
       </div>
-      <button class="add-btn" id="topAddBtn">＋ Add event</button>
+
+      <div class="topbar-actions">
+        <div class="clock-card">
+          <span>CENTRAL TIME</span>
+          <strong id="centralClock">--:--:--</strong>
+          <small id="centralClockDate"></small>
+        </div>
+        <button class="add-btn" id="topAddBtn">＋ Add event</button>
+      </div>
     </header>
 
     <section class="calendar-card">
@@ -662,13 +738,13 @@
       </div>
 
       <div class="weekdays">
-        <div class="weekday">Sun</div>
-        <div class="weekday">Mon</div>
-        <div class="weekday">Tue</div>
-        <div class="weekday">Wed</div>
-        <div class="weekday">Thu</div>
-        <div class="weekday">Fri</div>
-        <div class="weekday">Sat</div>
+        <div class="weekday">SUN</div>
+        <div class="weekday">MON</div>
+        <div class="weekday">TUE</div>
+        <div class="weekday">WED</div>
+        <div class="weekday">THU</div>
+        <div class="weekday">FRI</div>
+        <div class="weekday">SAT</div>
       </div>
 
       <div class="calendar-grid" id="calendarGrid"></div>
@@ -680,12 +756,12 @@
           <span class="selected-day-kicker">SELECTED DAY</span>
           <strong id="selectedDayButtonLabel"></strong>
         </div>
-        <span class="selected-day-arrow">day -></span>
+        <span class="selected-day-arrow">View day →</span>
       </button>
 
       <div class="side-panel">
         <h3>Upcoming events</h3>
-        <p class="date-label">Schedule</p>
+        <p class="date-label">Your next scheduled items</p>
         <div class="upcoming-list" id="upcomingList"></div>
       </div>
     </section>
@@ -702,7 +778,7 @@
         <button class="close-btn" id="closeDayScreenBtn">✕</button>
       </div>
 
-      <button class="add-btn" id="selectedAddBtn">＋ Add </button>
+      <button class="add-btn" id="selectedAddBtn">＋ Add event for this day</button>
       <div class="event-list day-screen-list" id="selectedEventList"></div>
     </div>
   </div>
@@ -710,13 +786,13 @@
   <div class="modal-backdrop" id="modalBackdrop">
     <div class="modal">
       <div class="modal-header">
-        <h3>Add event</h3>
+        <h3>Add calendar event</h3>
         <button class="close-btn" id="closeModalBtn">✕</button>
       </div>
 
       <form id="eventForm">
         <label>
-          Event
+          Event title
           <input id="eventTitle" type="text" placeholder="Example: Biology class" required />
         </label>
 
@@ -742,7 +818,7 @@
               <option value="daily">Every day</option>
               <option value="weekdays">Every weekday</option>
               <option value="weekends">Every weekend</option>
-              <option value="weekly">Every week on selected day</option>
+              <option value="weekly">Every week on selected days</option>
             </select>
           </label>
 
@@ -772,7 +848,7 @@
             Category
             <select id="eventCategory">
               <option value="school">School</option>
-              <option value="dorm">Other</option>
+              <option value="dorm">Dorm</option>
               <option value="sports">Sports</option>
               <option value="personal">Personal</option>
             </select>
@@ -1043,23 +1119,66 @@
                 <p>${escapeHTML(event.location || "No location")}</p>
                 <p>${escapeHTML(event.notes || "No notes")}</p>
               </div>
-              <button class="delete-btn" onclick="deleteEvent('${event.id}')">🗑</button>
+              <div class="delete-actions">
+                <button class="delete-btn" onclick="deleteEvent('${event.id}')" title="Delete this event">🗑</button>
+                ${event.repeatType && event.repeatType !== "none"
+                  ? `<button class="delete-series-btn" onclick="deleteSeries('${event.seriesId}')">Delete series</button>`
+                  : ""}
+              </div>
             </div>
           </div>
         `).join("")
         : `<div class="empty">No events on this day yet.</div>`;
     }
 
+    function getTimeZoneOffset(date, timeZone) {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(date);
+
+      const values = {};
+      parts.forEach(part => {
+        if (part.type !== "literal") values[part.type] = Number(part.value);
+      });
+
+      const asUTC = Date.UTC(
+        values.year,
+        values.month - 1,
+        values.day,
+        values.hour,
+        values.minute,
+        values.second
+      );
+
+      return asUTC - date.getTime();
+    }
+
+    function centralEventTimestamp(event) {
+      const [year, month, day] = event.date.split("-").map(Number);
+      const time = event.time || "12:00";
+      const [hour, minute] = time.split(":").map(Number);
+      const guessedUTC = Date.UTC(year, month - 1, day, hour, minute, 0);
+
+      let result = guessedUTC - getTimeZoneOffset(new Date(guessedUTC), "America/Chicago");
+      result = guessedUTC - getTimeZoneOffset(new Date(result), "America/Chicago");
+      return result;
+    }
+
     function renderUpcoming() {
-      const nowISO = formatISO(today);
+      const now = Date.now();
+      const next24Hours = now + (24 * 60 * 60 * 1000);
 
       const upcoming = [...events]
-        .filter(event => event.date >= nowISO)
-        .sort((a, b) => {
-          if (a.date !== b.date) return a.date.localeCompare(b.date);
-          return (a.time || "").localeCompare(b.time || "");
-        })
-        .slice(0, 7);
+        .map(event => ({ ...event, timestamp: centralEventTimestamp(event) }))
+        .filter(event => event.timestamp >= now && event.timestamp <= next24Hours)
+        .sort((a, b) => a.timestamp - b.timestamp);
 
       $("upcomingList").innerHTML = upcoming.length
         ? upcoming.map(event => `
@@ -1068,13 +1187,34 @@
             <span>${formatShortDate(event.date)} · ${formatTime(event.time)} · ${escapeHTML(event.location || event.category)}</span>
           </div>
         `).join("")
-        : `<div class="empty">No upcoming events.</div>`;
+        : `<div class="empty">No events during the next 24 hours.</div>`;
+    }
+
+    function updateCentralClock() {
+      const now = new Date();
+
+      $("centralClock").textContent = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Chicago",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      }).format(now);
+
+      $("centralClockDate").textContent = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Chicago",
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        timeZoneName: "short"
+      }).format(now);
     }
 
     function renderAll() {
       renderCalendar();
       renderSelectedDay();
       renderUpcoming();
+      updateCentralClock();
     }
 
     window.selectDate = function(dateISO) {
@@ -1086,6 +1226,22 @@
       events = events.filter(event => event.id !== eventId);
       saveEvents();
       showToast("Event deleted");
+    };
+
+    window.deleteSeries = function(seriesId) {
+      const seriesEvents = events.filter(event => event.seriesId === seriesId);
+
+      if (!seriesEvents.length) return;
+
+      const shouldDelete = confirm(
+        `Delete all ${seriesEvents.length} events in this recurring series?`
+      );
+
+      if (!shouldDelete) return;
+
+      events = events.filter(event => event.seriesId !== seriesId);
+      saveEvents();
+      showToast(`${seriesEvents.length} recurring events deleted`);
     };
 
     window.openAddModal = function(dateISO = selectedDate) {
@@ -1222,6 +1378,8 @@
     }
 
     renderAll();
+    setInterval(updateCentralClock, 1000);
+    setInterval(renderUpcoming, 60000);
   </script>
 </body>
 </html>
